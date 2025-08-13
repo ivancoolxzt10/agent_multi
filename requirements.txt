@@ -1,0 +1,34 @@
+# --- Core Web Framework ---
+# 用于构建 API 服务和接收 HTTP 请求
+fastapi
+uvicorn[standard]
+
+# --- Core LangChain Libraries ---
+# LangChain 的核心库，提供了基础的抽象和接口
+langchain
+# 包含与各种第三方服务（如 LLM、数据库）集成的社区实现
+langchain-community
+# 定义了 LangChain 的核心数据结构和接口（如 Message, Document）
+langchain-core
+# 用于构建和运行多智能体协作图的核心库
+langgraph
+
+# --- LLM & Embedding Model Integration ---
+# 阿里云 DashScope (通义千问) 的官方 SDK
+dashscope
+# langchain-openai 是一些核心功能（如 PydanticToolsParser）可能隐式依赖的包
+langchain-openai
+
+gradio
+
+# --- Vector Store & Data Handling ---
+# 用于创建和操作本地向量数据库的核心库（Facebook AI Research 出品）
+faiss-cpu
+
+langchain-ollama
+# 强大的数据验证库，LangChain 用它来定义结构化输出和工具参数
+pydantic
+# 用于加载 .env 文件中的环境变量
+python-dotenv
+# OpenAI 开发的 Tokenizer，LangChain 用于计算文本长度和成本
+tiktoken
