@@ -13,10 +13,14 @@ class TriageResult(BaseModel):
         description="从用户问题中提取出的关键实体信息，如订单号、用户ID或商品ID。如果没有，则返回'N/A'。"
     )
 
-class RepackResult(BaseModel):
-    """用于封装客服请求分诊结果的结构。"""
-    context: str = Field(
-        description="回复客服信息。"
+class ReplyResult(BaseModel):
+    """用于封装客服回复结果的结构。"""
+    summarize_context: str = Field(
+        description="只保留用户的意图和关键信息",
+        strict=False
+    ),
+    reply_context: str = Field(
+        description="改善整理之后,回复用户的信息。"
     )
 
 class ToolCallRequest(BaseModel):

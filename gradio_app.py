@@ -91,7 +91,7 @@ demo = gr.ChatInterface(
     fn=chat_function,
     title="🤖 多智能体电商客服 (Gradio版)",
     description="一个由 LangGraph 和通义千问驱动的虚拟客服团队。输入您的问题开始对话。",
-    examples=[["你好，我的订单 12345 到哪了？"], ["你好，我想查一下订单 n123qweqweqwewqe45 到哪里了，当前的用户ivan"]]
+    examples=[["你们的店铺支持七天无理由退货吗"],["你好，我的订单 12345 到哪了？"],["你们一般使用什么快递公司发货？"], ["你好，我想查一下订单 n123qweqweqwewqe45 到哪里了，当前的用户ivan"]]
 )
 
 if __name__ == "__main__":

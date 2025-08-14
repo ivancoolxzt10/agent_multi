@@ -5,7 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from node.graph import graph_app, AgentState
 
 app = FastAPI(title="电商虚拟客服团队 API")
@@ -60,10 +60,10 @@ async def stream_chat(request: ChatRequest):
                     if all_messages:
                         latest_msg = all_messages[-1]
                         # 如果是 JSON 字符串，尝试解析
-                        try:
-                            msg_obj = json.loads(latest_msg)
-                            speak = msg_obj.get("speak", latest_msg)
-                        except Exception:
+                        if isinstance(latest_msg, AIMessage):
+                            speak = latest_msg.content  # 提取 content 属性
+                        else:
+                            # 如果不是 AIMessage，直接使用 latest_msg
                             speak = latest_msg
                         yield format_sse({
                             "type": "speak",

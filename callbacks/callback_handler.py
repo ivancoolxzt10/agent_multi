@@ -34,12 +34,6 @@ class DebugCallbackHandler(BaseCallbackHandler):
         invocation_params = kwargs.get('invocation_params', {})
         print(f"🔧 [LLM INPUT] 调用参数: {invocation_params}")
 
-        # 特别是 messages 部分
-        messages_to_llm = invocation_params.get('messages', [[]])[0]
-        self.llm_input_messages = "\n".join([f"  - {type(msg).__name__}: {msg.content}" for msg in messages_to_llm])
-        print(f"💬 [LLM INPUT] 发送给LLM的消息:")
-        print(self.llm_input_messages)
-
     def on_llm_end(self, response: LLMResult, **kwargs: Any) -> Any:
         """当LLM完成生成并返回结果时触发。"""
         print("\n✅ [EVENT] on_llm_end: LLM调用完成。")

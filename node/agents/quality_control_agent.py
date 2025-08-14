@@ -2,7 +2,7 @@ from langchain_core.messages import AIMessage
 
 from llm import llm
 from node.agent_state import AgentState
-from node.data_dto import  RepackResult
+from node.data_dto import ReplyResult
 from node.utils import debug_handler
 
 
@@ -19,39 +19,48 @@ def quality_control_node(state: AgentState):
     # 2. 设计 Prompt 并调用 LLM
     print("正在调用AI生成最终总结回复...")
 
-    # 这个 Prompt 是核心，它定义了LLM的角色、任务和语气
-    prompt_template = f"""
-    你是一名非常专业和友善的王牌客服。以下是你与一位客户的完整对话记录。
-    你的任务是：
-    1. 阅读并理解整个对话。
-    2. 生成一段简短、友好、概括性的总结作为本次服务的结束语。
-    3. 你的总结应该回顾客户的主要问题和我们给出的解决方案或答复。
-    4. 最后，礼貌地结束对话，例如可以加上“感谢您的咨询，祝您生活愉快！”或类似的话。
-    5. 直接输出总结内容，不要包含任何前缀，例如 "好的，这是您的总结："。
-
-    对话记录:
+    # 定义完善客服回复内容的 Prompt 模板
+    prompt_template = """
+    你是一名专业且友善的电商客户服务质量审查员。以下是客服的回复内容：
     ---
     {chat_history_str}
     ---
+    你的任务是：
+    1. 仔细阅读客服的回复内容，判断是否存在问题或需要优化的地方。
+    2. 如果回复内容存在问题或可以优化，请重新修改并提供更完善的回复。
+    3. 如果回复内容没有问题且无需修改，请直接输出原话。
+    4. 确保最终回复内容简洁、专业且友好，语气礼貌且体现责任感。
+    5. 直接输出最终的回复内容，不需要任何前缀或额外说明。
     """
-    receptionist_chain = prompt_template | llm.with_structured_output(RepackResult)
+
     try:
-        # 直接调用 LLM，因为我们只需要纯文本回复
-        final_summary_response = receptionist_chain.invoke({"user_message": prompt_template}, config={"callbacks": [debug_handler]})
-        print(f"AI 生成的总结回复: {final_summary_response}")
+        # 构建带结构化输出的链
+        formatted_prompt = prompt_template.format(chat_history_str=chat_history_str)
+        # 调用 LLM 时直接传递字符串
+        final_summary_response = llm.with_structured_output(ReplyResult).invoke(
+            formatted_prompt,  # 确保这里是字符串
+            config={"callbacks": [debug_handler]}
+        )
+        print(f"AI生成的总结: {final_summary_response}")
     except Exception as e:
         print(f"!!! AI生成总结失败: {e}")
         # 设计降级策略：在AI调用失败时，返回一个通用的、安全的结束语
         final_summary_response = "感谢您的咨询，本次服务已结束。如果还有其他问题，欢迎随时联系我们！"
 
-    # 3. 更新状态
-    # 将AI生成的总结作为一条新的 "assistant" 消息添加到历史记录中
+    # 确保 final_summary_response 是字符串
+    if isinstance(final_summary_response, ReplyResult):
+        # 假设 ReplyResult 有一个 `context` 属性，提取为字符串
+        final_summary_response = final_summary_response.reply_context
+    elif not isinstance(final_summary_response, str):
+        # 如果不是字符串，强制转换为字符串
+        final_summary_response = str(final_summary_response)
+
+    # 将 AIMessage 添加到消息列表
     new_messages = messages + [AIMessage(content=final_summary_response)]
 
     # 返回更新后的状态，并标记对话结束
     return {
-        "messages": new_messages,
-        "conversation_finished": True
+        "messages": [AIMessage(content=final_summary_response)],
+        "conversation_finished": True,
+        "all_messages": new_messages
     }
-
-    return result

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 
 from langchain_core.messages import ToolMessage
 from node.agent_state import AgentState
@@ -20,6 +21,15 @@ def tool_executor_node(state: AgentState):
             try:
                 tool_func = all_tools_map[tool_name]
                 result = tool_func.invoke(args)
+                # 检查是否存在键 "tool_finished"
+                if isinstance(result, dict) and "tool_finished" in result:
+                    print(f"tool_finished: {result['tool_finished']}")
+                    if result["tool_finished"]:
+                        state["tool_finished"] = True
+                        print("对话已结束。")
+                    else:
+                        state["tool_finished"] = False
+                        print("对话未结束，继续进行。")
             except Exception as e:
                 result = f"工具执行出错: {e}"
 
@@ -28,5 +38,6 @@ def tool_executor_node(state: AgentState):
     print(f"工具执行结果: {tool_messages}")
     return {
         "messages": tool_messages,
+        "tool_finished": state.get("tool_finished", False),
         "tool_calls": []  # 清空工具调用请求
     }

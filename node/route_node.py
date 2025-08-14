@@ -45,7 +45,7 @@ def specialist_node(state: AgentState):
 
     if speak_content:
         state["messages"].append(ToolMessage(content=speak_content, tool_call_id="speak_to_user"))
-
     return {
-        "tool_calls": tool_calls_to_execute
+        "tool_calls": tool_calls_to_execute,
+        "messages": state["messages"],
     }
