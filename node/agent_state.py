@@ -20,6 +20,7 @@ class AgentState(TypedDict):
     tool_call_count: dict
     conversation_finished: bool
     can_reply_to_user: bool  # 当前结果是否可直接回复客户
+    user_id: str
 
     @staticmethod
     def save_state(session_id: str, state: dict, path: str = './sessions/'):

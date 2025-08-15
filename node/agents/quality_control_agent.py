@@ -60,9 +60,22 @@ def quality_control_node(state: AgentState):
     new_messages = messages + [AIMessage(content=reply_text)]
     # 可在主流程中根据 session_finished 做后续处理
 
+    # 只保留最后一轮问答：客户的问+最终AI回复
+    # 找到最后一个 HumanMessage
+    last_human = None
+    for msg in reversed(messages):
+        if getattr(msg, 'type', None) == 'human' or msg.__class__.__name__ == 'AIMessage':
+            last_human = msg
+            break
+    # 构造只包含最后一问一答的消息列表
+    if last_human:
+        filtered_messages = [last_human, AIMessage(content=reply_text)]
+    else:
+        filtered_messages = [AIMessage(content=reply_text)]
+
     # 返回更新后的状态，并标记对话结束
     return {
-        "messages": [AIMessage(content=reply_text)],
+        "messages": filtered_messages,
         "conversation_finished": can_reply_to_user,
         "all_messages": new_messages
     }

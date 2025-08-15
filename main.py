@@ -16,6 +16,7 @@ app = FastAPI(title="电商虚拟客服团队 API")
 class ChatRequest(BaseModel):
     message: str
     session_id: str
+    user_id: int
 
 
 def format_sse(data: dict) -> str:
@@ -44,7 +45,7 @@ async def stream_chat(request: ChatRequest):
     new_msgs = AgentState.trim_context(new_msgs, max_length=10)
     initial_state = AgentState(
         messages=new_msgs,
-        user_info=history.get('user_info', "") if history else "",
+        user_id=str(request.user_id),  # 传递用户ID
         assigned_agent=history.get('assigned_agent', "receptionist") if history else "receptionist",
         tool_calls=history.get('tool_calls', []) if history else [],
         can_reply_to_user=kb_results.get('can_reply_to_user', False),
