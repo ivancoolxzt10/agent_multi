@@ -27,7 +27,7 @@ def build_graph():
     def route_after_specialist(state: AgentState):
         # 获取工具调用次数的字典，默认为空
         tool_call_count = state["tool_call_count"] if "tool_call_count" in state else {}
-        if state.get("tool_finished"):
+        if state.get("sessions_finished"):
             # 如果对话已经结束，直接进入质量控制
             return "quality_control"
         # 检查是否有工具调用

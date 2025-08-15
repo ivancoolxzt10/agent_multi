@@ -2,28 +2,31 @@ import gradio as gr
 import requests
 import json
 import time
+import uuid
 
 # --- 后端 API 地址 ---
 # 确保你的 FastAPI 后端正在运行，并且这个地址是正确的
 BACKEND_URL = "http://127.0.0.1:8000/chat/stream"
-SESSION_ID = f"gradio-session-{int(time.time())}"
 
 
 def chat_function(message: str, history: list):
     """
-    这是 Gradio ChatInterface 的核心处理函数。
-    它接收用户消息和历史记录，并以流式方式返回 AI 的回复。
+    Gradio ChatInterface 的核心处理函数。
+    支持每个会话唯一 session_id。
     """
     print(f"收到的消息: {message}")
     print(f"对话历史: {history}")
 
-    # --- 核心改动：将整个逻辑包裹在 try...except 中，并确保 yield ---
-    try:
-        # 使用 with aiohttp.ClientSession() or httpx.AsyncClient() for async requests is better,
-        # but for simplicity, we stick with requests in a sync function that Gradio will run in a thread.
+    # 动态生成/提取 session_id
+    if history and isinstance(history, list) and len(history) > 0 and isinstance(history[0], dict) and 'session_id' in history[0]:
+        session_id = history[0]['session_id']
+    else:
+        session_id = f"gradio-session-{uuid.uuid4()}"
+        # 在 history 第一条插入 session_id 信息，后续轮次自动携带
+        history.insert(0, {'session_id': session_id})
 
-        # 准备请求体
-        payload = {"message": message, "session_id": SESSION_ID}
+    try:
+        payload = {"message": message, "session_id": session_id}
 
         # 发起流式请求
         response = requests.post(
@@ -68,7 +71,7 @@ def chat_function(message: str, history: list):
                             # 忽略无法解析的行，可能是空行或注释
                             pass
 
-        # 如果循环结束了，但什么都没 yield（例如，流中没有有效数据），
+        # 如果循���结束了，但什么都没 yield（例如，流中没有有效数据），
         # 我们在这里 yield 最终的 full_response 以避免错误。
         # 但在上面的逻辑中，每次 full_response 更新都会 yield，所以这里可能不会被执行。
         # 这是一个额外的保险。

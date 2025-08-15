@@ -31,6 +31,7 @@ def quality_control_node(state: AgentState):
     3. 如果回复内容没有问题且无需修改，请直接输出原话。
     4. 确保最终回复内容简洁、专业且友好，语气礼貌且体现责任感。
     5. 直接输出最终的回复内容，不需要任何前缀或额外说明。
+    6. 请根据对话内容，判断本次会话是否可以结束。如果你认为用户的问题已全部解决，或用户明确表示无需继续，请在结构化输出中返回 session_finished: true，否则为 false。
     """
 
     try:
@@ -45,22 +46,23 @@ def quality_control_node(state: AgentState):
     except Exception as e:
         print(f"!!! AI生成总结失败: {e}")
         # 设计降级策略：在AI调用失败时，返回一个通用的、安全的结束语
-        final_summary_response = "感谢您的咨询，本次服务已结束。如果还有其他问题，欢迎随时联系我们！"
+        final_summary_response = ReplyResult(reply_context="感谢您的咨询，本次服务��结束。如果还有其他问题，欢迎随时联系我们！", session_finished=True)
 
-    # 确保 final_summary_response 是字符串
+    # 确保 final_summary_response 是 ReplyResult
     if isinstance(final_summary_response, ReplyResult):
-        # 假设 ReplyResult 有一个 `context` 属性，提取为字符串
-        final_summary_response = final_summary_response.reply_context
-    elif not isinstance(final_summary_response, str):
-        # 如果不是字符串，强制转换为字符串
-        final_summary_response = str(final_summary_response)
+        reply_text = final_summary_response.reply_context
+        session_finished = getattr(final_summary_response, "session_finished", False)
+    else:
+        reply_text = str(final_summary_response)
+        session_finished = False
 
     # 将 AIMessage 添加到消息列表
-    new_messages = messages + [AIMessage(content=final_summary_response)]
+    new_messages = messages + [AIMessage(content=reply_text)]
+    # 可在主流程中根据 session_finished 做后续处理
 
     # 返回更新后的状态，并标记对话结束
     return {
-        "messages": [AIMessage(content=final_summary_response)],
-        "conversation_finished": True,
+        "messages": [AIMessage(content=reply_text)],
+        "conversation_finished": session_finished,
         "all_messages": new_messages
     }

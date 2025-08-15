@@ -18,7 +18,7 @@ class ReplyResult(BaseModel):
     summarize_context: str = Field(
         description="只保留用户的意图和关键信息",
         strict=False
-    ),
+    )
     reply_context: str = Field(
         description="改善整理之后,回复用户的信息。"
     )
