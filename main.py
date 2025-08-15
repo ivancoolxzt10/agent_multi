@@ -34,11 +34,13 @@ async def stream_chat(request: ChatRequest):
     kb_results = retriever.retrieve(request.message)
     kb_context = '\n'.join([r.get('content', str(r)) for r in kb_results.get('knowledge_base_result', [])])
     # 构建新消息列表，裁剪上下文
-    new_msgs = history_msgs + [HumanMessage(content=request.message)]
+    new_msgs = history_msgs.copy() if history_msgs else []
+    # 如果没有历史消息，则添加当前用户输入
+    if not history_msgs:
+        new_msgs.append(HumanMessage(content=request.message))
+    # 如果有知识库检索结果，则追加 ToolMessage
     if kb_context:
-        new_msgs.append(
-            ToolMessage(content=kb_context, tool_call_id="knowledge_base_retriever")
-        )
+        new_msgs.append(ToolMessage(content=kb_context, tool_call_id="knowledge_base_retriever"))
     new_msgs = AgentState.trim_context(new_msgs, max_length=10)
     initial_state = AgentState(
         messages=new_msgs,

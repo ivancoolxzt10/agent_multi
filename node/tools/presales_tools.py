@@ -6,6 +6,19 @@ from langchain_community.vectorstores import FAISS
 from kg.embeddings import embeddings
 from node.tools.knowledge_base_retriever_tool import knowledge_base_retriever
 
+@tool
+def get_order_details(order_id: str) -> dict:
+    """获取指定订单号的详细信息，包括商品、金额、状态和收货地址。"""
+    print(f"--- 售后工具: 获取订单详情 for {order_id} ---")
+    if order_id == "n123qweqweqwewqe45":
+        return {
+            "order_id": "12345",
+            "status": "已发货",
+            "amount": 299.00,
+            "items": [{"name": "蓝色连衣裙", "sku": "M码"}],
+            "address": "上海市...",
+        }
+    return {"error": "未找到订单"}
 
 @tool
 def get_product_retriever_tool(query: str) -> list:
@@ -28,4 +41,4 @@ def check_stock(product_id: str, sku: str = None) -> dict:
         return {"product_id": "p456", "status": "缺货", "stock_count": 0}
     return {"product_id": product_id, "status": "未找到商品", "stock_count": 0}
 
-presales_tool_list = [get_product_retriever_tool, check_stock,knowledge_base_retriever]
+presales_tool_list = [get_product_retriever_tool, check_stock,knowledge_base_retriever,get_order_details]

@@ -56,7 +56,7 @@ class KnowledgeBaseRetriever:
         can_reply_to_user = bool(results)
         return {
             'role': 'tool',
-            'knowledge_base_result': results if results else [{'content': '未找到相关信息。', 'source': 'faq'}],
+            'knowledge_base_result': results if results else [{'content': '', 'source': 'faq'}],
             'can_reply_to_user': can_reply_to_user
         }
 
