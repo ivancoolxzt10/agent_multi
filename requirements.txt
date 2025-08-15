@@ -20,6 +20,8 @@ dashscope
 langchain-openai
 
 gradio
+# sklearn 是一个流行的机器学习库，LangChain 用于一些数据处理和模型集成
+scikit-learn
 
 # --- Vector Store & Data Handling ---
 # 用于创建和操作本地向量数据库的核心库（Facebook AI Research 出品）
