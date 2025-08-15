@@ -40,5 +40,4 @@ class DebugCallbackHandler(BaseCallbackHandler):
         self.llm_output_raw = response.generations[0][0].message
         print(f"📦 [LLM OUTPUT] LLM原始返回 (AIMessage对象):")
         print(f"  - Content: '{self.llm_output_raw.content}'")
-        print(f"  - Tool Calls: {self.llm_output_raw.tool_calls}")
         print("---" * 10 + "\n")

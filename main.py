@@ -6,7 +6,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from node.graph import graph_app, AgentState
 from tools.knowledge_base_retriever_tool import KnowledgeBaseRetriever
 
@@ -32,16 +32,20 @@ async def stream_chat(request: ChatRequest):
     history_msgs = history.get('messages', []) if history else []
     # 检索知识库（只用本地，不用 MCP）
     kb_results = retriever.retrieve(request.message)
-    kb_context = '\n'.join([r.get('content', str(r)) for r in kb_results if 'content' in r or r])
+    kb_context = '\n'.join([r.get('content', str(r)) for r in kb_results.get('knowledge_base_result', [])])
     # 构建新消息列表，裁剪上下文
-    new_msgs = history_msgs + [HumanMessage(content=kb_context + '\n' + request.message)]
+    new_msgs = history_msgs + [HumanMessage(content=request.message)]
+    if kb_context:
+        new_msgs.append(
+            ToolMessage(content=kb_context, tool_call_id="knowledge_base_retriever")
+        )
     new_msgs = AgentState.trim_context(new_msgs, max_length=10)
     initial_state = AgentState(
         messages=new_msgs,
         user_info=history.get('user_info', "") if history else "",
         assigned_agent=history.get('assigned_agent', "receptionist") if history else "receptionist",
         tool_calls=history.get('tool_calls', []) if history else [],
-        tool_finished=history.get('sessions_finished', False) if history else False,
+        can_reply_to_user=kb_results.get('can_reply_to_user', False),
         called_tools=history.get('called_tools', {}) if isinstance(history.get('called_tools', {}), dict) else {},
         tool_call_count=history.get('tool_call_count', {}) if history else {},
         conversation_finished=False
@@ -61,11 +65,22 @@ async def stream_chat(request: ChatRequest):
                 if isinstance(output, dict) and output.get("conversation_finished"):
                     all_messages = output.get("all_messages", [])
                     if all_messages:
-                        latest_msg = all_messages[-1]
-                        if isinstance(latest_msg, AIMessage):
-                            speak = latest_msg.content
-                        else:
-                            speak = latest_msg
+                        latest_msg = all_messages[-2]  # 获取倒数第二条消息
+                        if isinstance(latest_msg, (AIMessage, ToolMessage)):
+                            # 如果是 AIMessage 或 ToolMessage，提取内容
+                            speak = getattr(latest_msg, 'content', str(latest_msg))
+                            # ToolMessage 可能是 json字符串，需要解析
+                            if isinstance(latest_msg, ToolMessage):
+                                try:
+                                    content_obj = json.loads(speak)
+                                    # 优先提取 speak 字段，否则直接用原内容
+                                    speak = content_obj.get('speak', speak)
+                                except Exception:
+                                    pass
+                        else: # 如果不是 AIMessage 或 ToolMessage，直接使用内容
+                            speak = str(latest_msg)
+                        if not speak:
+                            speak = "感谢您的咨询，本次服务已结束。如果还有其他问题，欢迎随时联系我们！"
                         yield format_sse({
                             "type": "speak",
                             "content": speak

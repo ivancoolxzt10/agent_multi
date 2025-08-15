@@ -22,6 +22,10 @@ class ReplyResult(BaseModel):
     reply_context: str = Field(
         description="改善整理之后,回复用户的信息。"
     )
+    can_reply_to_user: bool = Field(
+        default=False,
+        description="当前结果是否可直接回复客户"
+    )
 
 class ToolCallRequest(BaseModel):
     """一个具体的工具调用请求。"""
@@ -33,3 +37,7 @@ class AgentDecision(BaseModel):
     """专家 Agent 的决策，包含回复和工具调用。"""
     speak: str = Field(description="需要对用户说的回复内容。")
     tool_calls: list[ToolCallRequest] = Field(description="一个包含零个或多个工具调用请求的列表。")
+    can_reply_to_user: bool = Field(
+        default=False,
+        description="当前结果是否可直接回复客户"
+    )

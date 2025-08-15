@@ -19,6 +19,7 @@ class AgentState(TypedDict):
     called_tools: dict   # 修正为 dict 类型
     tool_call_count: dict
     conversation_finished: bool
+    can_reply_to_user: bool  # 当前结果是否可直接回复客户
 
     @staticmethod
     def save_state(session_id: str, state: dict, path: str = './sessions/'):

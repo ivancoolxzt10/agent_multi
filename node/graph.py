@@ -27,32 +27,46 @@ def build_graph():
     def route_after_specialist(state: AgentState):
         # 获取工具调用次数的字典，默认为空
         tool_call_count = state["tool_call_count"] if "tool_call_count" in state else {}
+        # 新增：记录已检索过的 query，防止重复调用
+        queried_set = state.get("queried_set", set())
         if state.get("sessions_finished"):
             # 如果对话已经结束，直接进入质量控制
             return "quality_control"
         # 检查是否有工具调用
         if state.get("tool_calls"):
+            new_tool_calls = []
             for tool_call in state["tool_calls"]:
                 tool_name = tool_call.tool_name
                 parameters = tool_call.parameters
-
+                # 打印当前工具调用的角色信息
+                sender_role = getattr(tool_call, "sender_role", None)
+                receiver_role = getattr(tool_call, "receiver_role", None)
+                print(f"[工具调用日志] tool_name: {tool_name}, sender_role: {sender_role}, receiver_role: {receiver_role}, parameters: {parameters}")
                 # 构造唯一标识（工具名+参数）
-                tool_key = f"{tool_name}"
-
+                tool_key = f"{tool_name}:{str(parameters)}"
+                # 针对 knowledge_base_retriever 做 query 去重
+                if tool_name == "knowledge_base_retriever":
+                    query = parameters.get("query")
+                    if query in queried_set:
+                        print(f"query '{query}' 已检索过，跳过重复调用。")
+                        continue
+                    queried_set.add(query)
                 # 检查调用次数是否超过限制
                 if tool_call_count.get(tool_key, 0) >= 3:  # 假设最大调用次数为 3
                     print(f"工具 {tool_name} 已达到最大调用次数，跳过调用。")
                     continue
-
                 # 增加调用次数
                 tool_call_count[tool_key] = tool_call_count.get(tool_key, 0) + 1
-
-                # 记录调用过的工具并返回工具执行节点
-                state.setdefault("called_tools", {})[tool_key] = True
+                new_tool_calls.append(tool_call)
+            # 更新 state
+            state["tool_call_count"] = tool_call_count
+            state["queried_set"] = queried_set
+            state["tool_calls"] = new_tool_calls
+            if new_tool_calls:
                 return "tool_executor"
-
-        # 如果没有工具调用，直接进入质量控制
+        # 没有工具调用或全部被去重/限制，进入质量控制
         return "quality_control"
+
     def route_after_tools(state: AgentState):
         # 工具执行完，返回给之前分配的专家继续对话
         return state["assigned_agent"]

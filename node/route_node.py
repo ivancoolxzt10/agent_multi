@@ -15,7 +15,6 @@ def specialist_node(state: AgentState):
 
     # 调用原始链，得到一个 AIMessage
     ai_response_message = chain.invoke({"messages": state["messages"]},config={"callbacks": [debug_handler]})
-    print("ai_response_message:", ai_response_message)
 
     # **核心健aprobst性处理：手动解析 AIMessage 的 tool_calls**
     tool_calls_to_execute = []
@@ -25,10 +24,9 @@ def specialist_node(state: AgentState):
     parsed = ai_response_message.get("parsed")
     raw = ai_response_message.get("raw")
 
-    tool_calls_to_execute = []
-    speak_content = ""
-
-    if parsed and parsed.tool_calls and len(parsed.tool_calls) > 0:
+    # 新增：如果会话已结束，则不再继续调用工具
+    can_reply_to_user = state.get("can_reply_to_user", False)
+    if parsed and parsed.tool_calls and len(parsed.tool_calls) > 0 and not can_reply_to_user:
         print(f"专家请求工具调用: {parsed.tool_calls}")
         for call in parsed.tool_calls:
             tool_calls_to_execute.append(
@@ -41,8 +39,6 @@ def specialist_node(state: AgentState):
         speak_content = raw.content
 
     print(f"专家回复内容: {speak_content}")
-    print(f"待执行工具: {tool_calls_to_execute}")
-
     if speak_content:
         state["messages"].append(ToolMessage(content=speak_content, tool_call_id="speak_to_user"))
     return {

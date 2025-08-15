@@ -12,7 +12,7 @@ class KnowledgeBaseRetriever:
     def __init__(self):
         pass
 
-    def local_retrieve(self, query: str) -> List[Dict[str, Any]]:
+    def local_retrieve(self, query: str) -> Dict[str, Any]:
         results = []
         # FAQ 检索（TF-IDF+余弦相似度）
         faq_path = os.path.join(os.path.dirname(__file__), '../kg/faq.csv')
@@ -41,11 +41,8 @@ class KnowledgeBaseRetriever:
             try:
                 with open(faiss_pkl_path, 'rb') as f:
                     data = pickle.load(f)
-                # 检查 embeddings 维度
                 if 'embeddings' in data and hasattr(data['embeddings'], 'shape'):
                     emb_dim = data['embeddings'].shape[1]
-                    # 这里假设有一个 get_query_embedding 方法，或用第一个 embedding 维度填充
-                    # 推荐：实际项目应用真实 embedding 方法
                     query_vec = np.zeros((1, emb_dim), dtype='float32')
                     # TODO: 替换为真实 embedding 生成逻辑
                     # index = faiss.read_index(faiss_index_path)
@@ -53,12 +50,15 @@ class KnowledgeBaseRetriever:
                     # for idx in I[0]:
                     #     if idx < len(data['texts']):
                     #         results.append({'content': data['texts'][idx], 'source': 'faiss'})
-                # 如果没有 embedding 信息，则跳过 FAISS 检索
             except Exception as e:
-                # FAISS 检索异常时只返回 FAQ 结果
                 pass
-        return results
+        # 判断是否可以直接回复客户
+        can_reply_to_user = bool(results)
+        return {
+            'role': 'tool',
+            'knowledge_base_result': results if results else [{'content': '未找到相关信息。', 'source': 'faq'}],
+            'can_reply_to_user': can_reply_to_user
+        }
 
-    def retrieve(self, query: str) -> List[Dict[str, Any]]:
-        # 只用本地检索，不用 MCP
+    def retrieve(self, query: str) -> Dict[str, Any]:
         return self.local_retrieve(query)
