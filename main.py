@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
-from work_flow.graph import graph_app, AgentState
+from work_flow.graph import build_graph, AgentState
 from tools.knowledge_base_retriever_tool import KnowledgeBaseRetriever
 
 app = FastAPI(title="电商虚拟客服团队 API")
@@ -47,7 +47,7 @@ async def stream_chat(request: ChatRequest):
     initial_state = AgentState(
         messages=new_msgs,
         user_id=str(request.user_id),  # 传递用户ID
-        assigned_agent=history.get('assigned_agent', "receptionist") if history else "receptionist",
+        assigned_agent=history.get('assigned_agent') if history and history.get('assigned_agent') else "receptionist",
         tool_calls=history.get('tool_calls', []) if history else [],
         can_reply_to_user=kb_results.get('can_reply_to_user', False),
         called_tools=history.get('called_tools', {}) if isinstance(history.get('called_tools', {}), dict) else {},
@@ -56,8 +56,11 @@ async def stream_chat(request: ChatRequest):
         user_info=history.get('user_info', "") if history else "",
         sessions_finished=history.get('sessions_finished', False) if history else False
     )
+    # 动态构建 graph_app，入口节点由 assigned_agent 决定
+    entry_agent = initial_state["assigned_agent"] if initial_state.get("assigned_agent") else "receptionist"
+    app = build_graph(entry_agent=entry_agent)
     async def event_stream():
-        async for event in graph_app.astream_events(initial_state, version="v1"):
+        async for event in app.astream_events(initial_state, version="v1"):
             kind = event["event"]
             node_name = event["name"]
             if kind == "on_chain_start":

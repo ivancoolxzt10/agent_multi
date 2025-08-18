@@ -77,5 +77,6 @@ def quality_control_node(state: AgentState):
     return {
         "messages": filtered_messages,
         "conversation_finished": can_reply_to_user,
-        "all_messages": new_messages
+        "all_messages": new_messages,
+        "assigned_agent": state["assigned_agent"],
     }
