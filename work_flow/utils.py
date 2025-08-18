@@ -3,9 +3,9 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from callbacks.callback_handler import DebugCallbackHandler
 from llm import llm
-from node.data_dto import AgentDecision
-from node.tools.aftersales_tools import aftersales_tool_list
-from node.tools.presales_tools import presales_tool_list
+from work_flow.data_dto import AgentDecision
+from work_flow.tools.aftersales_tools import aftersales_tool_list
+from work_flow.tools.presales_tools import presales_tool_list
 
 # 创建回调处理器的实例
 debug_handler = DebugCallbackHandler()

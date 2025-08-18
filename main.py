@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
-from node.graph import graph_app, AgentState
+from work_flow.graph import graph_app, AgentState
 from tools.knowledge_base_retriever_tool import KnowledgeBaseRetriever
 
 app = FastAPI(title="电商虚拟客服团队 API")

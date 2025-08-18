@@ -1,10 +1,10 @@
 from langchain_core.messages import ToolMessage
 
-from node.agent_state import AgentState
-from node.agents.after_sales_v_agent import aftersales_chain
-from node.agents.pre_sales_agent import presales_chain
-from node.data_dto import ToolCallRequest
-from node.utils import debug_handler
+from work_flow.agent_state import AgentState
+from work_flow.agents.after_sales_v_agent import aftersales_chain
+from work_flow.agents.pre_sales_agent import presales_chain
+from work_flow.data_dto import ToolCallRequest
+from work_flow.utils import debug_handler
 
 
 def specialist_node(state: AgentState):

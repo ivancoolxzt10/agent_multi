@@ -1,5 +1,5 @@
-from node.tools.aftersales_tools import aftersales_tool_list
-from node.utils import create_specialist_chain
+from work_flow.tools.aftersales_tools import aftersales_tool_list
+from work_flow.utils import create_specialist_chain
 from langchain.tools.render import render_text_description # 直接导入
 
 formatted_aftersales_tools = render_text_description(aftersales_tool_list)

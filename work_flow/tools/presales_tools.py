@@ -4,7 +4,7 @@ from langchain.tools import tool
 from langchain_community.vectorstores import FAISS
 
 from kg.embeddings import embeddings
-from node.tools.knowledge_base_retriever_tool import knowledge_base_retriever
+from work_flow.tools.knowledge_base_retriever_tool import knowledge_base_retriever
 
 @tool
 def get_order_details(order_id: str) -> dict:
