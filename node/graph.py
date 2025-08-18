@@ -25,10 +25,12 @@ def build_graph():
         return state["assigned_agent"]
 
     def route_after_specialist(state: AgentState):
+        tool_call_count = state.get("tool_call_count", {})
+        if not isinstance(tool_call_count, dict):
+            tool_call_count = {}
         # 获取工具调用次数的字典，默认为空
-        tool_call_count = state["tool_call_count"] if "tool_call_count" in state else {}
+        queried_set = set(state.get("queried_set", []))
         # 新增：记录已检索过的 query，防止重复调用
-        queried_set = state.get("queried_set", set())
         if state.get("sessions_finished"):
             # 如果对话已经结束，直接进入质量控制
             return "quality_control"
@@ -58,9 +60,9 @@ def build_graph():
                 # 增加调用次数
                 tool_call_count[tool_key] = tool_call_count.get(tool_key, 0) + 1
                 new_tool_calls.append(tool_call)
-            # 更新 state
+            # 更新 state（全局统一处理，不分当前/历史）
             state["tool_call_count"] = tool_call_count
-            state["queried_set"] = queried_set
+            state["queried_set"] = list(queried_set)
             state["tool_calls"] = new_tool_calls
             if new_tool_calls:
                 return "tool_executor"

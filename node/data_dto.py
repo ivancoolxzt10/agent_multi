@@ -11,9 +11,9 @@ class TriageResult(BaseModel):
     )
     user_info: str = Field(
         description="从用户问题中提取出的关键实体信息，如订单号、用户ID或商品ID。如果没有，则返回'N/A'。"
-    ),
+    )
     user_id: str = Field(
-        default=0,
+        default="0",
         description="默认不填充,使用 0 作为占位符。",
     )
 

@@ -5,19 +5,10 @@ import time
 import uuid
 
 # --- 后端 API 地址 ---
-# 确保你的 FastAPI 后端正在运行，并且这个地址是正确的
 BACKEND_URL = "http://127.0.0.1:8000/chat/stream"
-SESSION_ID = f"gradio-session-{int(time.time())}"
 
 
-def chat_function(message: str, history: list, user_id: int):
-    session_id = None
-    # 保证 history 只为 list of strings 或 dict，不插入 dict 到 history
-    if history and isinstance(history, list) and len(history) > 0 and isinstance(history[0], dict):
-        session_id = history[0].get('session_id')
-        user_id = history[0].get('user_id', user_id)
-    if not session_id:
-        session_id = f"gradio-session-{uuid.uuid4()}"
+def chat_function(message: str, history: list, user_id: int, session_id: str):
     try:
         payload = {"message": message, "session_id": session_id, "user_id": user_id}
         response = requests.post(BACKEND_URL, json=payload, stream=True, timeout=300)
@@ -59,23 +50,44 @@ with gr.Blocks() as demo:
     gr.Markdown("请输入用户ID进行测试：")
     user_id_input = gr.Number(label="用户ID", value=1, precision=0)
     user_info = gr.Markdown(f"当前用户ID：1")
+    user_id_input.change(lambda uid: f"当前用户ID：{int(uid)}", inputs=user_id_input, outputs=user_info)
 
-    def update_user_info(user_id):
-        return f"当前用户ID：{int(user_id)}"
+    chatbot = gr.Chatbot()
+    message_box = gr.Textbox(label="请输入消息", placeholder="请输入您的问题...", lines=2)
+    session_id_state = gr.State(str(uuid.uuid4()))
+    history_state = gr.State([])
+    send_btn = gr.Button("发送")
+    clear_btn = gr.Button("清空对话并重置会话ID")
 
-    user_id_input.change(update_user_info, inputs=user_id_input, outputs=user_info)
-    chat = gr.ChatInterface(
-        fn=lambda message, history: chat_function(message, history, int(user_id_input.value)),
-        title=None,
-        description=None,
-        examples=[
-            ["你们的店铺支持七天无理由退货吗"],
-            ["你好，我的订单ricecooker20250815002到哪了？"],
-            ["你们一般使用什么快递公司发货？"],
-            ["你好，我想查一下订单 n123qweqweqwewqe45 到哪里了"]
-        ],
+    def send_message(message, history, user_id, session_id):
+        response = chat_function(message, history, int(user_id), session_id)
+        # 更新历史
+        history = history + [[message, response]]
+        return history, "", history  # chatbot, 清空输入框, 更新history_state
+
+    send_btn.click(
+        send_message,
+        inputs=[message_box, history_state, user_id_input, session_id_state],
+        outputs=[chatbot, message_box, history_state]
     )
 
+    def reset_session():
+        return [], str(uuid.uuid4()), []  # 清空chatbot, 新session_id, 清空history
+
+    clear_btn.click(
+        reset_session,
+        inputs=None,
+        outputs=[chatbot, session_id_state, history_state]
+    )
+
+    # 示例对话
+    gr.Markdown("## 示例问题：")
+    gr.Markdown("""
+    - 你们的店铺支持七天无理由退货吗
+    - 你好，我的订单ricecooker20250815002到哪了？
+    - 你们一般使用什么快递公司发货？
+    - 你好，我想查一下订单 n123qweqweqwewqe45 到哪里了
+    """)
+
 if __name__ == "__main__":
-    # 使用 share=True 可以创建一个临时的公网链接，方便分享
     demo.launch(share=False)

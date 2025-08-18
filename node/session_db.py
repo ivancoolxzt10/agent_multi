@@ -12,11 +12,20 @@ class SessionDB:
     def _init_db(self):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
+        # 检查是否已存在 tool_call_id 字段
+        c.execute("PRAGMA table_info(messages)")
+        columns = [col[1] for col in c.fetchall()]
+        if 'tool_call_id' not in columns:
+            try:
+                c.execute('ALTER TABLE messages ADD COLUMN tool_call_id TEXT')
+            except Exception:
+                pass
         c.execute('''CREATE TABLE IF NOT EXISTS messages (
             session_id TEXT,
             role TEXT,
             content TEXT,
-            timestamp INTEGER
+            timestamp INTEGER,
+            tool_call_id TEXT
         )''')
         c.execute('''CREATE TABLE IF NOT EXISTS session_meta (
             session_id TEXT PRIMARY KEY,
@@ -31,22 +40,22 @@ class SessionDB:
         conn.commit()
         conn.close()
 
-    def save_message(self, session_id: str, role: str, content: str, timestamp: int):
+    def save_message(self, session_id: str, role: str, content: str, timestamp: int, tool_call_id: str = None):
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        c.execute('INSERT INTO messages (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)',
-                  (session_id, role, content, timestamp))
+        c.execute('INSERT INTO messages (session_id, role, content, timestamp, tool_call_id) VALUES (?, ?, ?, ?, ?)',
+                  (session_id, role, content, timestamp, tool_call_id))
         conn.commit()
         conn.close()
 
     def get_messages(self, session_id: str, max_length: int = 10) -> List[Dict[str, Any]]:
         conn = sqlite3.connect(self.db_path)
         c = conn.cursor()
-        c.execute('SELECT role, content, timestamp FROM messages WHERE session_id=? ORDER BY timestamp DESC LIMIT ?',
+        c.execute('SELECT role, content, timestamp, tool_call_id FROM messages WHERE session_id=? ORDER BY timestamp DESC LIMIT ?',
                   (session_id, max_length))
         rows = c.fetchall()
         conn.close()
-        return [{'role': r[0], 'content': r[1], 'timestamp': r[2]} for r in reversed(rows)]
+        return [{'role': r[0], 'content': r[1], 'timestamp': r[2], 'tool_call_id': r[3]} for r in rows]
 
     def save_meta(self, session_id: str, meta: Dict[str, Any]):
         conn = sqlite3.connect(self.db_path)
@@ -75,4 +84,3 @@ class SessionDB:
             'tool_call_count': row[5],
             'conversation_finished': bool(row[6])
         }
-

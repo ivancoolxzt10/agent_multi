@@ -36,9 +36,10 @@ async def stream_chat(request: ChatRequest):
     kb_context = '\n'.join([r.get('content', str(r)) for r in kb_results.get('knowledge_base_result', [])])
     # 构建新消息列表，裁剪上下文
     new_msgs = history_msgs.copy() if history_msgs else []
-    # 如果没有历史消息，则添加当前用户输入
-    if not history_msgs:
-        new_msgs.append(HumanMessage(content=request.message))
+    # 只保留对话消息，过滤掉非 HumanMessage/AIMessage/ToolMessage 类型
+    new_msgs = [msg for msg in history_msgs if isinstance(msg, (HumanMessage, AIMessage))]
+    # 始终追加当前用户输入
+    new_msgs.append(HumanMessage(content=request.message))
     # 如果有知识库检索结果，则追加 ToolMessage
     if kb_context:
         new_msgs.append(ToolMessage(content=kb_context, tool_call_id="knowledge_base_retriever"))
@@ -51,7 +52,9 @@ async def stream_chat(request: ChatRequest):
         can_reply_to_user=kb_results.get('can_reply_to_user', False),
         called_tools=history.get('called_tools', {}) if isinstance(history.get('called_tools', {}), dict) else {},
         tool_call_count=history.get('tool_call_count', {}) if history else {},
-        conversation_finished=False
+        conversation_finished=False,
+        user_info=history.get('user_info', "") if history else "",
+        sessions_finished=history.get('sessions_finished', False) if history else False
     )
     async def event_stream():
         async for event in graph_app.astream_events(initial_state, version="v1"):
