@@ -1,4 +1,3 @@
-
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from callbacks.callback_handler import DebugCallbackHandler
@@ -11,15 +10,15 @@ from work_flow.tools.presales_tools import presales_tool_list
 debug_handler = DebugCallbackHandler()
 
 # --- 专家 Agent (通用逻辑) ---
-def create_specialist_chain(system_prompt: str, tools: list):
+def create_specialist_chain(system_prompt: str, tools: list, llm_instance=None):
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt),
         MessagesPlaceholder(variable_name="messages"),
     ])
-
-    return prompt | llm.with_structured_output(AgentDecision, include_raw=True)
+    # 支持外部传入 llm 实例，否则默认使用全局 llm
+    use_llm = llm_instance if llm_instance is not None else llm
+    return prompt | use_llm.with_structured_output(AgentDecision, include_raw=True)
 
 
 # 合并所有工具，供 ToolExecutorAgent 使用
 all_tools_map = {t.name: t for t in presales_tool_list + aftersales_tool_list}
-

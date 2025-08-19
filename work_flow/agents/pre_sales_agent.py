@@ -1,4 +1,6 @@
 from langchain_core.tools import render_text_description
+from work_flow.agents.base_agent import BaseAgent
+from llm import llm
 
 from work_flow.tools.presales_tools import presales_tool_list
 from work_flow.utils import create_specialist_chain
@@ -50,4 +52,16 @@ presales_system_prompt_professional = f"""
 *   `session_finished` 字段用于标记本���会话是否可以结束。
 """
 
-presales_chain = create_specialist_chain(presales_system_prompt_professional, presales_tool_list)
+class PreSalesAgent(BaseAgent):
+    def __init__(self, llm_instance=None):
+        super().__init__(llm_instance if llm_instance is not None else llm)
+        self.prompt = presales_system_prompt_professional
+        self.tools = presales_tool_list
+
+    def get_chain(self):
+        return create_specialist_chain(self.prompt, self.tools, llm_instance=self.llm)
+
+
+# 默认 agent 实例和链条（兼容旧用法）
+pre_sales_agent = PreSalesAgent()
+presales_chain = pre_sales_agent.get_chain()

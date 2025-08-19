@@ -5,6 +5,7 @@ from llm import llm
 from work_flow.agent_state import AgentState
 from work_flow.data_dto import  TriageResult
 from work_flow.utils import  debug_handler
+from work_flow.agents.base_agent import BaseAgent
 
 
 # 3. Agent 节点定义
@@ -46,16 +47,23 @@ receptionist_prompt_professional = ChatPromptTemplate.from_messages([
     # 而是让 LangChain 自动将 HumanMessage 插入，这样更灵活。
     ("human", "{user_message}")
 ])
-receptionist_chain = receptionist_prompt_professional | llm.with_structured_output(TriageResult)
 
+class ReceptionistAgent(BaseAgent):
+    def __init__(self, llm_instance=None):
+        super().__init__(llm_instance if llm_instance is not None else llm)
+        self.prompt = receptionist_prompt_professional
+    def get_chain(self):
+        return self.prompt | self.llm.with_structured_output(TriageResult)
+    def agent_node(self, state):
+        user_message = state["messages"][-1].content if "messages" in state and state["messages"] else ""
+        print("--- 节点: 前台接待员 ---")
+        result = self.get_chain().invoke({"user_message": user_message}, config={"callbacks": [debug_handler]})
+        print(f"分诊结果: 指派给 {result.agent_role}, 用户信息: {result.user_info}")
+        return {
+            "assigned_agent": result.agent_role,
+            "user_info": result.user_info
+        }
 
+# 默认 agent 实例和链条（兼容旧用法）
+receptionist_agent = ReceptionistAgent()
 
-def receptionist_node(state: AgentState):
-    print("--- 节点: 前台接待员 ---")
-    user_message = state["messages"][-1].content
-    result = receptionist_chain.invoke({"user_message": user_message},config={"callbacks": [debug_handler]})
-    print(f"分诊结果: 指派给 {result.agent_role}, 用户信息: {result.user_info}")
-    return {
-        "assigned_agent": result.agent_role,
-        "user_info": result.user_info
-    }

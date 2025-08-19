@@ -1,6 +1,8 @@
 from work_flow.tools.aftersales_tools import aftersales_tool_list
 from work_flow.utils import create_specialist_chain
 from langchain.tools.render import render_text_description # 直接导入
+from llm import llm
+from work_flow.agents.base_agent import BaseAgent
 
 formatted_aftersales_tools = render_text_description(aftersales_tool_list)
 
@@ -37,4 +39,23 @@ aftersales_system_prompt_professional = f"""
 *   `session_finished` 字段用于标记本次会话是否可以结束。
 """
 
-aftersales_chain = create_specialist_chain(aftersales_system_prompt_professional, aftersales_tool_list)
+# 支持外部传入 llm 实例，默认使用全局 llm
+def get_aftersales_chain(llm_instance=None):
+    return create_specialist_chain(
+        aftersales_system_prompt_professional,
+        aftersales_tool_list,
+        llm_instance=llm_instance if llm_instance is not None else llm
+    )
+
+# 默认链条（兼容旧用法）
+class AfterSalesAgent(BaseAgent):
+    def __init__(self, llm_instance=None):
+        super().__init__(llm_instance if llm_instance is not None else llm)
+        self.prompt = aftersales_system_prompt_professional
+        self.tools = aftersales_tool_list
+    def get_chain(self):
+        return create_specialist_chain(self.prompt, self.tools, llm_instance=self.llm)
+
+# 默认 agent 实例和链条（兼容旧用法）
+after_sales_agent = AfterSalesAgent()
+aftersales_chain = after_sales_agent.get_chain()

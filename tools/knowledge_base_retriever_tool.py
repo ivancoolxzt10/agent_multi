@@ -1,9 +1,7 @@
 import os
-import json
 import csv
 import pickle
 import numpy as np
-import faiss
 from typing import List, Dict, Any
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity

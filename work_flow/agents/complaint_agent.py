@@ -1,9 +1,6 @@
-import time
-import random
+from work_flow.agents.base_agent import BaseAgent
 from llm import llm
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import render_text_description
-
 from work_flow.agent_state import AgentState
 from work_flow.tools.complaint_tools import complaint_tool_list
 from work_flow.utils import create_specialist_chain
@@ -43,16 +40,21 @@ complaint_system_prompt_professional = f"""
 *   `session_finished` 字段用于标记本次投诉会话是否可以结束。
 """
 
-complaint_chain = create_specialist_chain(complaint_system_prompt_professional, complaint_tool_list)
+class ComplaintAgent(BaseAgent):
+    def __init__(self, llm_instance=None):
+        super().__init__(llm_instance if llm_instance is not None else llm)
+        self.prompt = complaint_system_prompt_professional
+        self.tools = complaint_tool_list
+        self.chain = create_specialist_chain(self.prompt, self.tools, llm_instance=self.llm)
+    def agent_node(self, state: AgentState):
+        user_message = state["messages"][-1].content if "messages" in state and state["messages"] else ""
+        result = self.chain.invoke({"user_message": user_message})
+        state.set("reply", result.speak)
+        state.set("tool_calls", result.tool_calls)
+        state.set("session_finished", result.session_finished)
+        state.add_history({"event": "complaint_tool_calls", "tool_calls": result.tool_calls})
+        state.set("assigned_agent", "complaint")
+        return state
 
-def complaint_agent_node(state: AgentState):
-    user_message = state["messages"][-1].content if "messages" in state and state["messages"] else state.get("complaint", "")
-    result = complaint_chain.invoke({"user_message": user_message})
-    state.set("reply", result.speak)
-    state.set("tool_calls", result.tool_calls)
-    state.set("session_finished", result.session_finished)
-    # 投诉 agent 直接处理所有工具调用，不做分流
-    state.add_history({"event": "complaint_tool_calls", "tool_calls": result.tool_calls})
-    # 补充 assigned_agent 字段，保证会话流转
-    state.set("assigned_agent", "complaint")
-    return state
+complaint_agent = ComplaintAgent()
+complaint_chain = complaint_agent.chain
