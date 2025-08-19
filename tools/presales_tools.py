@@ -3,7 +3,7 @@ import os
 from langchain.tools import tool
 from langchain_community.vectorstores import FAISS
 
-from kg.embeddings import embeddings
+from kg_tools.embeddings import embeddings
 from tools.knowledge_base_retriever_tool import knowledge_base_retriever
 
 @tool

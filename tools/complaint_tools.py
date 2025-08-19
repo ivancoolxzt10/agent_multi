@@ -12,7 +12,7 @@ def create_complaint_ticket(user_id: int, order_id: str, complaint_type: str, co
 def knowledge_base_retrieve(query: str) -> str:
     """根据投诉内容检索知识库FAQ，返回最相关的答案。"""
     import os, csv
-    faq_path = os.path.join(os.path.dirname(__file__), '../../kg/faq.csv')
+    faq_path = os.path.join(os.path.dirname(__file__), '../../kg_data/faq.csv')
     best_answer = "未找到相关知识库答案。"
     if os.path.exists(faq_path):
         with open(faq_path, 'r', encoding='utf-8') as f:

@@ -7,7 +7,7 @@ from langchain_community.vectorstores import FAISS
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from dotenv import load_dotenv
 
-from kg.embeddings import embeddings
+from kg_tools.embeddings import embeddings
 
 load_dotenv()
 
@@ -15,7 +15,7 @@ def ingest_data():
     """
     加载、分割、向量化并存储知识库数据。
     """
-    if not os.path.exists("faq.csv"):
+    if not os.path.exists("../kg_data/faq.csv"):
         print("错误：faq.csv 文件未找到。")
         return
 
@@ -23,7 +23,7 @@ def ingest_data():
 
     # 1. 加载文档
     try:
-        loader = CSVLoader(file_path="faq.csv", source_column="question", encoding="utf-8")
+        loader = CSVLoader(file_path="../kg_data/faq.csv", source_column="question", encoding="utf-8")
         documents = loader.load()
     except Exception as e:
         print("加载 faq.csv 时出错：", e)

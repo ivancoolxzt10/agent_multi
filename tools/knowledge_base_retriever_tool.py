@@ -1,6 +1,6 @@
 from langchain.tools import tool
 from langchain_community.vectorstores import FAISS
-from kg.embeddings import embeddings
+from kg_tools.embeddings import embeddings
 import os
 import time
 

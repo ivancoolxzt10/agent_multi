@@ -34,8 +34,6 @@ async def stream_chat(request: ChatRequest):
     # 检索知识库（只用本地，不用 MCP）
     kb_results = retriever.retrieve(request.message)
     kb_context = '\n'.join([r.get('content', str(r)) for r in kb_results.get('knowledge_base_result', [])])
-    # 构建新消息列表，裁剪上下文
-    new_msgs = history_msgs.copy() if history_msgs else []
     # 只保留对话消息，过滤掉非 HumanMessage/AIMessage/ToolMessage 类型
     new_msgs = [msg for msg in history_msgs if isinstance(msg, (HumanMessage, AIMessage))]
     # 始终追加当前用户输入
