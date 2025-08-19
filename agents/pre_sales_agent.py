@@ -1,8 +1,8 @@
 from langchain_core.tools import render_text_description
-from work_flow.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 from llm import llm
 
-from work_flow.tools.presales_tools import presales_tool_list
+from tools.presales_tools import presales_tool_list
 from work_flow.utils import create_specialist_chain
 
 formatted_presales_tools = render_text_description(presales_tool_list)

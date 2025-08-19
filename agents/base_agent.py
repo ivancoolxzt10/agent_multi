@@ -1,5 +1,6 @@
 from llm import llm
 
+
 class BaseAgent:
     def __init__(self, llm_instance=None):
         self.llm = llm_instance if llm_instance is not None else llm

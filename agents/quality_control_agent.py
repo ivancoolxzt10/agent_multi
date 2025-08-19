@@ -1,6 +1,6 @@
 from langchain_core.messages import AIMessage
 
-from work_flow.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 from llm import llm
 from work_flow.agent_state import AgentState
 from work_flow.data_dto import ReplyResult

@@ -1,8 +1,8 @@
-from work_flow.tools.aftersales_tools import aftersales_tool_list
+from tools.aftersales_tools import aftersales_tool_list
 from work_flow.utils import create_specialist_chain
 from langchain.tools.render import render_text_description # 直接导入
 from llm import llm
-from work_flow.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 
 formatted_aftersales_tools = render_text_description(aftersales_tool_list)
 

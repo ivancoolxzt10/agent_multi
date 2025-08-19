@@ -1,62 +1,78 @@
+from langchain.tools import tool
+from langchain_community.vectorstores import FAISS
+from kg.embeddings import embeddings
 import os
-import csv
-import pickle
-import numpy as np
-from typing import List, Dict, Any
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+import time
 
-class KnowledgeBaseRetriever:
-    def __init__(self):
-        pass
+def extract_qa_pairs(docs):
+    qa_pairs = []
+    seen_contents = set()
+    for doc in docs:
+        question = ""
+        answer = ""
+        # 兼容多种格式，优先结构化
+        if hasattr(doc, 'metadata') and doc.metadata:
+            question = doc.metadata.get('question', '').strip()
+            answer = doc.metadata.get('answer', '').strip()
+        # 兼容原始文本格式
+        if not question and "question:" in doc.page_content:
+            question = doc.page_content.split("question:")[1].split("answer:")[0].strip()
+        if not answer and "answer:" in doc.page_content:
+            answer = doc.page_content.split("answer:")[1].strip()
+        # 兼容无结构内容
+        if not question and not answer:
+            content = doc.page_content.strip()
+        elif question and answer:
+            content = f"Q: {question}\nA: {answer}"
+        elif question:
+            content = f"Q: {question}"
+        elif answer:
+            content = f"A: {answer}"
+        else:
+            content = ""
+        # 去重
+        if content and content not in seen_contents:
+            qa_pairs.append({
+                "role": "tool",
+                "content": content,
+                "timestamp": int(time.time())
+            })
+            seen_contents.add(content)
+    return qa_pairs
 
-    def local_retrieve(self, query: str) -> Dict[str, Any]:
-        results = []
-        # FAQ 检索（TF-IDF+余弦相似度）
-        faq_path = os.path.join(os.path.dirname(__file__), '../kg/faq.csv')
-        faq_questions = []
-        faq_answers = []
-        if os.path.exists(faq_path):
-            with open(faq_path, 'r', encoding='utf-8') as f:
-                reader = csv.DictReader(f)
-                for row in reader:
-                    faq_questions.append(row.get('question', ''))
-                    faq_answers.append(row.get('answer', ''))
-            if faq_questions:
-                # 向量化
-                vectorizer = TfidfVectorizer().fit(faq_questions + [query])
-                faq_vecs = vectorizer.transform(faq_questions)
-                query_vec = vectorizer.transform([query])
-                sims = cosine_similarity(query_vec, faq_vecs)[0]
-                top_n = np.argsort(sims)[::-1][:3]  # 返回最相关的3条
-                for idx in top_n:
-                    if sims[idx] > 0:
-                        results.append({'content': faq_answers[idx], 'source': 'faq', 'score': float(sims[idx]), 'question': faq_questions[idx]})
-        # FAISS 检索
-        faiss_index_path = os.path.join(os.path.dirname(__file__), '../faiss_index/index.faiss')
-        faiss_pkl_path = os.path.join(os.path.dirname(__file__), '../faiss_index/index.pkl')
-        if os.path.exists(faiss_index_path) and os.path.exists(faiss_pkl_path):
-            try:
-                with open(faiss_pkl_path, 'rb') as f:
-                    data = pickle.load(f)
-                if 'embeddings' in data and hasattr(data['embeddings'], 'shape'):
-                    emb_dim = data['embeddings'].shape[1]
-                    query_vec = np.zeros((1, emb_dim), dtype='float32')
-                    # TODO: 替换为真实 embedding 生成逻辑
-                    # index = faiss.read_index(faiss_index_path)
-                    # D, I = index.search(query_vec, k=3)
-                    # for idx in I[0]:
-                    #     if idx < len(data['texts']):
-                    #         results.append({'content': data['texts'][idx], 'source': 'faiss'})
-            except Exception as e:
-                pass
-        # 判断是否可以直接回复客户
-        can_reply_to_user = bool(results)
-        return {
-            'role': 'tool',
-            'knowledge_base_result': results if results else [{'content': '', 'source': 'faq'}],
-            'can_reply_to_user': can_reply_to_user
-        }
+@tool
+def knowledge_base_retriever(query: str, threshold: float = 0.5):
+    """
+    创建一个能够从企业知识库（FAQ）中检索信息的工具，并根据阈值过滤结果。
+    """
+    if not os.path.exists("faiss_index"):
+        raise FileNotFoundError("FAISS index not found. Run ingest.py first.")
 
-    def retrieve(self, query: str) -> Dict[str, Any]:
-        return self.local_retrieve(query)
+    db = FAISS.load_local("faiss_index", embeddings, allow_dangerous_deserialization=True)
+    retriever = db.as_retriever(search_kwargs={"k": 3})
+    retrieved_results = retriever.invoke(query)
+    qa_structured = extract_qa_pairs(retrieved_results)
+    # 再次去重，保证输出唯一
+    unique_structured = []
+    seen_contents = set()
+    for item in qa_structured:
+        if item["content"] not in seen_contents:
+            unique_structured.append(item)
+            seen_contents.add(item["content"])
+    knowledge_content = "\n\n".join([item["content"] for item in unique_structured])
+    print(f"--- 知识库检索结果 (阈值 {threshold}): {knowledge_content} ---")
+    # 判断会话是否结束：如果检索结果明确且与用户问题高度相关，则结束，否则继续
+    can_reply_to_user = False
+    if knowledge_content:
+        end_keywords = ["已解决", "没有问题", "不需要", "谢谢", "本次会话已结束"]
+        for kw in end_keywords:
+            if kw in knowledge_content:
+                can_reply_to_user = True
+                break
+        if len(retrieved_results) == 1 and len(knowledge_content) > 30:
+            can_reply_to_user = True
+    return {
+        "role": "tool",
+        "knowledge_base_result": unique_structured if unique_structured else [{"role": "tool", "content": "未找到相关信息。", "timestamp": int(time.time())}],
+        "can_reply_to_user": can_reply_to_user
+    }

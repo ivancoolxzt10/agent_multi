@@ -1,8 +1,8 @@
 from langchain_core.messages import ToolMessage
 
 from work_flow.agent_state import AgentState
-from work_flow.agents.after_sales_v_agent import aftersales_chain
-from work_flow.agents.pre_sales_agent import presales_chain
+from agents.after_sales_v_agent import aftersales_chain
+from agents.pre_sales_agent import presales_chain
 from work_flow.data_dto import ToolCallRequest
 from work_flow.utils import debug_handler
 

@@ -3,7 +3,7 @@ from langchain.tools import tool
 import os
 import sqlite3
 
-from work_flow.tools.knowledge_base_retriever_tool import knowledge_base_retriever
+from tools.knowledge_base_retriever_tool import knowledge_base_retriever
 
 
 def get_db_conn():

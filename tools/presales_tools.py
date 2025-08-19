@@ -4,7 +4,7 @@ from langchain.tools import tool
 from langchain_community.vectorstores import FAISS
 
 from kg.embeddings import embeddings
-from work_flow.tools.knowledge_base_retriever_tool import knowledge_base_retriever
+from tools.knowledge_base_retriever_tool import knowledge_base_retriever
 
 @tool
 def get_order_details(order_id: str) -> dict:
@@ -23,9 +23,9 @@ def get_order_details(order_id: str) -> dict:
 @tool
 def get_product_retriever_tool(query: str) -> list:
     """根据查询内容查找商品信息、店铺政策、活动规则等售前相关问题的答案。"""
-    if not os.path.exists("../../faiss_index"):
+    if not os.path.exists("../faiss_index"):
         raise FileNotFoundError("FAISS index not found. Run ingest.py first.")
-    db = FAISS.load_local("../../faiss_index", embeddings, allow_dangerous_deserialization=True)
+    db = FAISS.load_local("../faiss_index", embeddings, allow_dangerous_deserialization=True)
     retriever = db.as_retriever()
     docs = retriever.get_relevant_documents(query)
     return [doc.page_content for doc in docs]

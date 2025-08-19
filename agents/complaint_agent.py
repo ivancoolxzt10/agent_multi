@@ -1,8 +1,8 @@
-from work_flow.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 from llm import llm
 from langchain_core.tools import render_text_description
 from work_flow.agent_state import AgentState
-from work_flow.tools.complaint_tools import complaint_tool_list
+from tools.complaint_tools import complaint_tool_list
 from work_flow.utils import create_specialist_chain
 
 formatted_complaint_tools = render_text_description(complaint_tool_list)

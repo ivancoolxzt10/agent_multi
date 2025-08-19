@@ -2,10 +2,9 @@ from langchain_core.prompts import ChatPromptTemplate
 
 
 from llm import llm
-from work_flow.agent_state import AgentState
 from work_flow.data_dto import  TriageResult
 from work_flow.utils import  debug_handler
-from work_flow.agents.base_agent import BaseAgent
+from agents.base_agent import BaseAgent
 
 
 # 3. Agent 节点定义
