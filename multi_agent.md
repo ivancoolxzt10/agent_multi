@@ -130,13 +130,3 @@
 - work_flow/workflow_nodes.py、workflow_routes.py：节点与路由规则。
 - main.py：API主入口，动态构建流程、分发请求。
 
----
-
-## 10. 常见问题与最佳实践
-
-- **入口节点固定问题**：需用 build_graph(entry_agent) 动态指定，避免入口Agent始终为 receptionist。
-- **last_business_agent异常**：assigned_agent为质检时，需回溯最近的非质检Agent。
-- **状态同步**：每次会话保存/加载时，需补全关键字段，防止丢失。
-- **工具调用安全**：工具调用需有权限和异常处理，防止数据泄露或误操作。
-
----
