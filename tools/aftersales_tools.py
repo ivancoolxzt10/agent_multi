@@ -7,7 +7,7 @@ from tools.knowledge_base_retriever_tool import knowledge_base_retriever
 
 
 def get_db_conn():
-    db_path = os.path.join(os.path.dirname(__file__), '../../data/aftersales.db')
+    db_path = os.path.join(os.path.dirname(__file__), '../data/aftersales.db')
     return sqlite3.connect(db_path)
 
 

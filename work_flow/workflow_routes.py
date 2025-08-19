@@ -40,7 +40,7 @@ def route_after_specialist(state: AgentState):
                 "params": parameters,
             })
             continue
-        if policy.is_exceed_limit(tool_key, tool_call_count):
+        if policy.is_exceed_limit(tool_name, parameters, tool_call_count):
             add_history({
                 "event": "tool_call_skipped",
                 "reason": "exceed_limit",

@@ -11,7 +11,8 @@ class ToolCallPolicy:
             return query in queried_set
         return False
 
-    def is_exceed_limit(self, tool_key, tool_call_count):
+    def is_exceed_limit(self, tool_name, parameters, tool_call_count):
+        tool_key = f"{tool_name}:{str(parameters)}"
         return tool_call_count.get(tool_key, 0) >= self.max_calls
 
     def update_state(self, tool_name, parameters, tool_call_count, queried_set):
@@ -21,4 +22,3 @@ class ToolCallPolicy:
             query = parameters.get("query")
             queried_set.add(query)
         return tool_call_count, queried_set
-
